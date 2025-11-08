@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Dice Roller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dice-container {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .dice {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            margin: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s ease;
+        }
+
+        .dice.rolling {
+            animation: roll 0.1s infinite;
+        }
+
+        @keyframes roll {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            25% {
+                transform: rotate(90deg) scale(1.1);
+            }
+
+            50% {
+                transform: rotate(180deg) scale(1);
+            }
+
+            75% {
+                transform: rotate(270deg) scale(1.1);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        .roll-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .roll-button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .roll-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .remaining-numbers {
+            margin: 20px;
+            font-size: 18px;
+        }
+
+        .remaining-list {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .number-chip {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .result-history {
+            margin: 20px;
+            font-size: 16px;
+        }
+
+        .history-list {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .history-chip {
+            background: #4caf50;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .reset-button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎲 Animated Dice Roller</h1>
+
+    <div class="dice-container">
+        <div class="dice" id="dice">?</div>
+    </div>
+
+    <button class="roll-button" id="rollButton" onclick="rollDice()">Roll Dice!</button>
+
+    <div class="remaining-numbers">
+        <div>Remaining Numbers:</div>
+        <div class="remaining-list" id="remainingList"></div>
+    </div>
+
+    <div class="result-history">
+        <div>Rolled Numbers:</div>
+        <div class="history-list" id="historyList"></div>
+    </div>
+
+    <button class="reset-button" onclick="resetGame()">Reset Game</button>
+
+    <script>
+        let availableNumbers = [1, 2, 3, 4, 5, 6];
+        let rolledNumbers = [];
+        let isRolling = false;
+
+        function updateDisplay() {
+            // Update remaining numbers
+            const remainingList = document.getElementById('remainingList');
+            remainingList.innerHTML = '';
+            availableNumbers.forEach(num => {
+                const chip = document.createElement('div');
+                chip.className = 'number-chip';
+                chip.textContent = num;
+                remainingList.appendChild(chip);
+            });
+
+            // Update history
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            rolledNumbers.forEach(num => {
+                const chip = document.createElement('div');
+                chip.className = 'history-chip';
+                chip.textContent = num;
+                historyList.appendChild(chip);
+            });
+
+            // Update button state
+            const rollButton = document.getElementById('rollButton');
+            if (availableNumbers.length === 0) {
+                rollButton.textContent = 'All Numbers Rolled!';
+                rollButton.disabled = true;
+            } else {
+                rollButton.textContent = 'Roll Dice!';
+                rollButton.disabled = isRolling;
+            }
+        }
+
+        function rollDice() {
+            if (isRolling || availableNumbers.length === 0) return;
+
+            isRolling = true;
+            const dice = document.getElementById('dice');
+            const rollButton = document.getElementById('rollButton');
+
+            dice.classList.add('rolling');
+            rollButton.disabled = true;
+            rollButton.textContent = 'Rolling...';
+
+            let rollDuration = 2000; // 2 seconds total
+            let currentSpeed = 50; // Start fast (50ms intervals)
+            let maxSpeed = 200; // End slow (200ms intervals)
+            let startTime = Date.now();
+
+            function animateRoll() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / rollDuration;
+
+                if (progress < 1) {
+                    // Show random number during animation
+                    const randomDisplay = Math.floor(Math.random() * 6) + 1;
+                    dice.textContent = randomDisplay;
+
+                    // Gradually slow down the animation
+                    currentSpeed = 50 + (maxSpeed - 50) * progress;
+
+                    setTimeout(animateRoll, currentSpeed);
+                } else {
+                    // Animation finished - show final result
+                    dice.classList.remove('rolling');
+
+                    // Pick random number from available numbers
+                    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                    const finalNumber = availableNumbers[randomIndex];
+
+                    // Remove the number from available and add to rolled
+                    availableNumbers.splice(randomIndex, 1);
+                    rolledNumbers.push(finalNumber);
+
+                    // Show final number
+                    dice.textContent = finalNumber;
+
+                    isRolling = false;
+                    updateDisplay();
+                }
+            }
+
+            animateRoll();
+        }
+
+        function resetGame() {
+            availableNumbers = [1, 2, 3, 4, 5, 6];
+            rolledNumbers = [];
+            isRolling = false;
+
+            const dice = document.getElementById('dice');
+            dice.textContent = '?';
+            dice.classList.remove('rolling');
+
+            updateDisplay();
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+
+</html>

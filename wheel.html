@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Wheel Spinner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .wheel-container {
+            position: relative;
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .wheel {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            transition: transform 4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .wheel svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .wheel text {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #fff;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .controls {
+            margin: 30px 0;
+        }
+
+        .spin-btn {
+            background: #fff;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .spin-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 30px;
+        }
+
+        .numbers-used {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .numbers-grid {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .number-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .number-available {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .number-used {
+            background: #4ecdc4;
+            border: 2px solid #4ecdc4;
+            transform: scale(1.1);
+        }
+
+        .reset-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .setup-container {
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        .setup-input {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-align: center;
+            margin: 0 10px;
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            box-sizing: border-box;
+        }
+
+        .setup-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .setup-btn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .setup-btn:hover {
+            background: #45b7d1;
+            transform: translateY(-2px);
+        }
+
+        .game-area {
+            display: none;
+        }
+
+        .game-area.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Random Wheel Spinner</h1>
+
+    <div class="setup-container" id="setupContainer">
+        <h3>Setup Your Wheel</h3>
+        <p>How many numbers do you want on the wheel? (2-20)</p>
+        <input type="number" class="setup-input" id="numberInput" placeholder="6" min="2" max="20" value="6">
+        <button class="setup-btn" onclick="createWheel()">CREATE WHEEL</button>
+    </div>
+
+    <div class="game-area" id="gameArea">
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div class="wheel" id="wheel">
+                <svg width="284" height="284" viewBox="0 0 284 284" id="wheelSvg">
+                    <g transform="translate(142,142)" id="wheelSegments">
+                        <!-- Segments will be generated dynamically -->
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="spin-btn" id="spinBtn" onclick="spinWheel()">SPIN THE WHEEL</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div class="numbers-used">
+            <h3>Numbers Status:</h3>
+            <div class="numbers-grid" id="numbersGrid">
+                <!-- Number badges will be generated dynamically -->
+            </div>
+            <button class="reset-btn" id="resetBtn" onclick="resetGame()" style="display: none;">Reset Game</button>
+            <button class="reset-btn" onclick="showSetup()" style="margin-left: 10px;">New Wheel</button>
+        </div>
+    </div>
+
+    <script>
+        let availableNumbers = [];
+        let totalNumbers = 6;
+        let isSpinning = false;
+        let segmentCenters = {};
+
+        // Color palette for segments
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3',
+            '#a8e6cf', '#dda0dd', '#98d8c8', '#f7dc6f', '#bb8fce', '#85c1e9',
+            '#f8c471', '#82e0aa', '#f1948a', '#85c1e9', '#d7bde2', '#a9dfbf',
+            '#f9e79f', '#aed6f1'
+        ];
+
+        function createWheel() {
+            const input = document.getElementById('numberInput');
+            const numSegments = parseInt(input.value);
+
+            if (numSegments < 2 || numSegments > 20) {
+                alert('Please enter a number between 2 and 20');
+                return;
+            }
+
+            totalNumbers = numSegments;
+            availableNumbers = Array.from({ length: totalNumbers }, (_, i) => i + 1);
+
+            // Calculate segment centers
+            const segmentAngle = 360 / totalNumbers;
+            segmentCenters = {};
+            for (let i = 1; i <= totalNumbers; i++) {
+                segmentCenters[i] = (i - 1) * segmentAngle + segmentAngle / 2;
+            }
+
+            generateWheelSVG();
+            generateNumberBadges();
+
+            // Show game area and hide setup
+            document.getElementById('setupContainer').style.display = 'none';
+            document.getElementById('gameArea').classList.add('active');
+
+            // Initialize wheel rotation
+            initializeWheel();
+        }
+
+        function generateWheelSVG() {
+            const segmentsContainer = document.getElementById('wheelSegments');
+            segmentsContainer.innerHTML = '';
+
+            const segmentAngle = 360 / totalNumbers;
+            const radius = 142;
+
+            for (let i = 0; i < totalNumbers; i++) {
+                const startAngle = i * segmentAngle;
+                const endAngle = (i + 1) * segmentAngle;
+                const color = colors[i % colors.length];
+
+                // Convert angles to radians
+                const startRad = (startAngle * Math.PI) / 180;
+                const endRad = (endAngle * Math.PI) / 180;
+
+                // Calculate path coordinates
+                const x1 = radius * Math.cos(startRad - Math.PI / 2);
+                const y1 = radius * Math.sin(startRad - Math.PI / 2);
+                const x2 = radius * Math.cos(endRad - Math.PI / 2);
+                const y2 = radius * Math.sin(endRad - Math.PI / 2);
+
+                // Large arc flag for segments > 180 degrees
+                const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+
+                // Create path element
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M 0,0 L ${x1},${y1} A ${radius},${radius} 0 ${largeArcFlag},1 ${x2},${y2} Z`);
+                path.setAttribute('fill', color);
+                path.setAttribute('stroke', '#fff');
+                path.setAttribute('stroke-width', '2');
+
+                // Calculate text position (center of segment)
+                const textAngle = startAngle + segmentAngle / 2;
+                const textRad = (textAngle * Math.PI) / 180;
+                const textRadius = radius * 0.7; // Position text at 70% of radius
+                const textX = textRadius * Math.cos(textRad - Math.PI / 2);
+                const textY = textRadius * Math.sin(textRad - Math.PI / 2);
+
+                // Create text element
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', textX);
+                text.setAttribute('y', textY);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('font-size', totalNumbers > 10 ? '18' : '24');
+                text.setAttribute('font-weight', 'bold');
+                text.textContent = i + 1;
+
+                segmentsContainer.appendChild(path);
+                segmentsContainer.appendChild(text);
+            }
+        }
+
+        function generateNumberBadges() {
+            const numbersGrid = document.getElementById('numbersGrid');
+            numbersGrid.innerHTML = '';
+
+            for (let i = 1; i <= totalNumbers; i++) {
+                const badge = document.createElement('div');
+                badge.className = 'number-badge number-available';
+                badge.setAttribute('data-number', i);
+                badge.textContent = i;
+                numbersGrid.appendChild(badge);
+            }
+        }
+
+        function spinWheel() {
+            if (isSpinning || availableNumbers.length === 0) return;
+
+            isSpinning = true;
+            const spinBtn = document.getElementById('spinBtn');
+            const wheel = document.getElementById('wheel');
+            const result = document.getElementById('result');
+
+            spinBtn.disabled = true;
+            spinBtn.textContent = 'SPINNING...';
+            result.textContent = '';
+
+            // Select random number from available numbers
+            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+            const selectedNumber = availableNumbers[randomIndex];
+
+            // Get the center angle for the selected segment
+            const targetSegmentCenter = segmentCenters[selectedNumber];
+
+            // Add multiple full rotations for effect (5-8 full spins)
+            const fullRotations = (Math.floor(Math.random() * 4) + 5) * 360;
+
+            // Calculate final rotation: we want to rotate so the segment center ends up at the top (0°)
+            const finalRotation = fullRotations + (360 - targetSegmentCenter);
+
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+            // Wait for animation to complete
+            setTimeout(() => {
+                // Remove the selected number from available numbers
+                availableNumbers.splice(randomIndex, 1);
+
+                // Update UI
+                result.textContent = `You got: ${selectedNumber}!`;
+                updateNumbersDisplay(selectedNumber);
+
+                isSpinning = false;
+
+                if (availableNumbers.length > 0) {
+                    spinBtn.disabled = false;
+                    spinBtn.textContent = 'SPIN AGAIN';
+                } else {
+                    spinBtn.textContent = 'ALL NUMBERS USED';
+                    document.getElementById('resetBtn').style.display = 'inline-block';
+                    result.textContent += ' 🎉 All numbers completed!';
+                }
+            }, 4000);
+        }
+
+        function updateNumbersDisplay(usedNumber) {
+            const numberBadges = document.querySelectorAll('.number-badge');
+            numberBadges.forEach(badge => {
+                if (parseInt(badge.dataset.number) === usedNumber) {
+                    badge.classList.remove('number-available');
+                    badge.classList.add('number-used');
+                }
+            });
+        }
+
+        function resetGame() {
+            availableNumbers = Array.from({ length: totalNumbers }, (_, i) => i + 1);
+            isSpinning = false;
+
+            const spinBtn = document.getElementById('spinBtn');
+            const wheel = document.getElementById('wheel');
+            const result = document.getElementById('result');
+            const resetBtn = document.getElementById('resetBtn');
+
+            // Reset UI
+            spinBtn.disabled = false;
+            spinBtn.textContent = 'SPIN THE WHEEL';
+            wheel.style.transform = 'rotate(0deg)';
+            result.textContent = '';
+            resetBtn.style.display = 'none';
+
+            // Reset number badges
+            const numberBadges = document.querySelectorAll('.number-badge');
+            numberBadges.forEach(badge => {
+                badge.classList.remove('number-used');
+                badge.classList.add('number-available');
+            });
+
+            initializeWheel();
+        }
+
+        function showSetup() {
+            document.getElementById('setupContainer').style.display = 'block';
+            document.getElementById('gameArea').classList.remove('active');
+        }
+
+        function initializeWheel() {
+            const wheel = document.getElementById('wheel');
+            const initialRotation = Math.floor(Math.random() * 360);
+            wheel.style.transform = `rotate(${initialRotation}deg)`;
+            wheel.style.transition = 'none';
+
+            setTimeout(() => {
+                wheel.style.transition = 'transform 4s cubic-bezier(0.23, 1, 0.32, 1)';
+            }, 100);
+        }
+
+        // Allow Enter key to create wheel
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('numberInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    createWheel();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
