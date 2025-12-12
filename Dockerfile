@@ -6,3 +6,4 @@ COPY . /usr/local/apache2/htdocs/
 
 # The base image automatically exposes port 80 and starts the Apache server,
 # so no EXPOSE or CMD commands are strictly necessary for this simple case
+EXPOSE 80
